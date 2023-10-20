@@ -152,8 +152,10 @@ if __name__ == '__main__':
     parser.add_argument('--cudnn-benchmark-toggle', action='store_true', \
                         default=False, 
                         help='use cudnn-benchmark? (default false)') 
-    parser.add_argument('--audio_path', type=str,
-                        default=None, help='Please provide path of audio file to be classified')
+    # parser.add_argument('--audio_path', type=str,
+    #                     default=None, help='Please provide path of audio file to be classified')
+    parser.add_argument('--folder_path', type=str,
+                        default='/home/shilpa/datasets/Prosody_TTS', help='Please provide path of audio file to be classified')
     
 
     dir_yaml = os.path.splitext('model_config_RawNet')[0] + '.yaml'
@@ -206,35 +208,36 @@ if __name__ == '__main__':
         print('Model loaded : {}'.format(args.model_path))
 
     print("Time for forward pass")
+    if args.folder_path:
+        folder_path = args.folder_path
+        print('Audio path loaded : {}'.format(folder_path))
 
-
-    if args.audio_path:
-        audio_path = args.audio_path
-        print('Audio loaded : {}'.format(audio_path))
-
-
-    # path = '/home/shilpa/Documents/datasets/datasets/generated_audio/ljspeech_hifiGAN/LJ001-0001_generated.wav'
-    # audio_path = '/home/shilpa/Documents/datasets/datasets/LJ_Speech/LJSpeech-1.1/wavs/LJ001-0008.wav'
-    # path = '/home/shilpa/Downloads/LJ001-0001_generated.flac'
-    X,fs = librosa.load(audio_path, sr=16000) 
-    X_pad= pad(X,64600)
-    x_inp= Tensor(X_pad)
-    x_inp = x_inp.view(1, -1)
-    print("audio file loaded")
-    # Perform a forward pass on a single audio file
-
-    
-    print("let's begin inference")
+    # folder_path = '/home/shilpa/datasets/Prosody_TTS'
+    audio_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.wav')] 
     model.eval()
-    x_inp = x_inp.to(device)
-    pred = model(x_inp)
-    softmax_probs = torch.softmax(pred, dim=1)
-    _, predicted_class = torch.max(softmax_probs, 1)
-    # _, pred_final = pred.max(dim=1)
-    if predicted_class.item() == 0:
-        print("The audio is spoofed")
-    elif predicted_class.item() == 1:
-        print("The audio is bonafide")
+    spoof = 0
+    count_spoof = 0
+    bonafide = 0
+    count_bonafide = 0
+    for audio_file in audio_files:
+        X,fs = librosa.load(audio_file, sr=16000) 
+        X_pad= pad(X,64600)
+        x_inp= Tensor(X_pad)
+        x_inp = x_inp.view(1, -1)
+        x_inp = x_inp.to(device)
+        pred = model(x_inp)
+        softmax_probs = torch.softmax(pred, dim=1)
+        _, predicted_class = torch.max(softmax_probs, 1)
+        # _, pred_final = pred.max(dim=1)
+        if predicted_class.item() == 0:
+            count_spoof = count_spoof+1
+            print(f"Prediction of File {audio_file} is:> spoofed")
+        elif predicted_class.item() == 1:
+            count_bonafide = count_bonafide+1
+            print(f"Prediction of File {audio_file} is:> bonafide")
+
+    print("Total spoof:> ",count_spoof)
+    print("Total bonafide:> ",count_bonafide)
 
 
 
