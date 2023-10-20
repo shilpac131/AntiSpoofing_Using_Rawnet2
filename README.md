@@ -1,4 +1,4 @@
-# AntiSpoofing on RawNet2 ASVspoof 2021 baseline
+# AntiSpoofing using RawNet2 ASVspoof 2021 baseline
 
 Original work by By Hemlata Tak, EURECOM, 2021
 
