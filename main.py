@@ -212,28 +212,35 @@ if __name__ == '__main__':
         folder_path = args.folder_path
         print('Audio path loaded : {}'.format(folder_path))
 
-    audio_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.wav')] 
+    audio_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.wav', '.flac')] 
     model.eval()
     spoof = 0
     count_spoof = 0
     bonafide = 0
     count_bonafide = 0
-    for audio_file in audio_files:
-        X,fs = librosa.load(audio_file, sr=16000) 
-        X_pad= pad(X,64600)
-        x_inp= Tensor(X_pad)
-        x_inp = x_inp.view(1, -1)
-        x_inp = x_inp.to(device)
-        pred = model(x_inp)
-        softmax_probs = torch.softmax(pred, dim=1)
-        _, predicted_class = torch.max(softmax_probs, 1)
-        # _, pred_final = pred.max(dim=1)
-        if predicted_class.item() == 0:
-            count_spoof = count_spoof+1
-            print(f"Prediction of File {audio_file} is:> spoofed")
-        elif predicted_class.item() == 1:
-            count_bonafide = count_bonafide+1
-            print(f"Prediction of File {audio_file} is:> bonafide")
+
+    output_file = '/app/data/output.txt'
+    with open(output_file, "a") as file:
+        for audio_file in audio_files:
+            X,fs = librosa.load(audio_file, sr=16000) 
+            X_pad= pad(X,64600)
+            x_inp= Tensor(X_pad)
+            x_inp = x_inp.view(1, -1)
+            x_inp = x_inp.to(device)
+            pred = model(x_inp)
+            softmax_probs = torch.softmax(pred, dim=1)
+            _, predicted_class = torch.max(softmax_probs, 1)
+            # Get the softmax probability values of the predicted class
+            predicted_class_probs = softmax_probs.gather(1, predicted_class.unsqueeze(1)).squeeze(1)
+            # _, pred_final = pred.max(dim=1)
+            if predicted_class.item() == 0:
+                count_spoof = count_spoof+1
+                print(f"Prediction of File {audio_file} is:> spoofed")
+                file.write(f"\nPrediction of File {audio_file} is:> spoofed with confidence score of {predicted_class_probs.item()}")
+            elif predicted_class.item() == 1:
+                count_bonafide = count_bonafide+1
+                print(f"Prediction of File {audio_file} is:> bonafide")
+                file.write(f"\nPrediction of File {audio_file} is:> bonafide with confidence score of {predicted_class_probs.item()}")
 
     print("Total spoof:> ",count_spoof)
     print("Total bonafide:> ",count_bonafide)
