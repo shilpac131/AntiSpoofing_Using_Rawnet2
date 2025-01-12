@@ -133,7 +133,7 @@ if __name__ == '__main__':
                         help='random seed (default: 1234)')
     
     parser.add_argument('--model_path', type=str,
-                        default='/home/shilpa/shilpa/ASVspoof2021Baselines/DF/Baseline-RawNet2/pre_trained_DF_RawNet2.pth', help='Model checkpoint. Here provide LA trained model path to evaluate on DF Eval databse')
+                        default='./pre_trained_DF_RawNet2.pth', help='Model checkpoint. Here provide LA trained model path to evaluate on DF Eval databse')
     parser.add_argument('--comment', type=str, default=None,
                         help='Comment to describe the saved model')
     # Auxiliary arguments
@@ -212,7 +212,6 @@ if __name__ == '__main__':
         folder_path = args.folder_path
         print('Audio path loaded : {}'.format(folder_path))
 
-    # folder_path = '/home/shilpa/datasets/Prosody_TTS'
     audio_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.wav')] 
     model.eval()
     spoof = 0
@@ -239,59 +238,3 @@ if __name__ == '__main__':
     print("Total spoof:> ",count_spoof)
     print("Total bonafide:> ",count_bonafide)
 
-
-
-    # # evaluation 
-    # if args.eval:
-    #     file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/{}.cm.eval.trl.txt'.format(prefix,prefix_2021)),is_train=False,is_eval=True)
-    #     print('no. of eval trials',len(file_eval))
-    #     eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
-    #     produce_evaluation_file(eval_set, model, device, args.eval_output)
-    #     sys.exit(0)
-    
-    # # define train dataloader
-
-    # d_label_trn,file_train = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt'.format(prefix)),is_train=True,is_eval=False)
-    # print('no. of training trials',len(file_train))
-    
-    # #train_set=Dataset_ASVspoof2019_train(list_IDs = file_train,labels = d_label_trn,base_dir = os.path.join(args.database_path+'ASVspoof2019_{}_train/'.format(args.track)))
-    # # Note we bypass the reference to the track to train on LA instead of on DF (there is no provided training or dev data for DF)
-    # train_set=Dataset_ASVspoof2019_train(list_IDs = file_train,labels = d_label_trn,base_dir = os.path.join(args.database_path+'ASVspoof2019_LA_train/'))
-
-    # train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True,drop_last = True)
-    
-    # del train_set,d_label_trn
-    
-    # # define validation dataloader
-
-    # # Note we bypass the reference to the track to validate on LA instead of on DF (there is no provided training or dev data for DF)
-    # d_label_dev,file_dev = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt'.format(prefix)),is_train=False,is_eval=False)
-    # print('no. of validation trials',len(file_dev))
-
-    # # Note we bypass the reference to the track to train on LA instead of on DF (there is no provided training or dev data for DF)
-    # dev_set = Dataset_ASVspoof2019_train(list_IDs = file_dev,
-	# 	labels = d_label_dev,
-	# 	base_dir = os.path.join(args.database_path+'ASVspoof2019_LA_dev/'))
-    # dev_loader = DataLoader(dev_set, batch_size=args.batch_size, shuffle=False)
-    # del dev_set,d_label_dev
-
-
-    # # Training and validation 
-    # num_epochs = args.num_epochs
-    # writer = SummaryWriter('logs/{}'.format(model_tag))
-    # best_acc = 99
-    # for epoch in range(num_epochs):
-    #     running_loss, train_accuracy = train_epoch(train_loader,model, args.lr,optimizer, device)
-    #     valid_accuracy = evaluate_accuracy(dev_loader, model, device)
-    #     writer.add_scalar('train_accuracy', train_accuracy, epoch)
-    #     writer.add_scalar('valid_accuracy', valid_accuracy, epoch)
-    #     writer.add_scalar('loss', running_loss, epoch)
-    #     print('\n{} - {} - {:.2f} - {:.2f}'.format(epoch,
-    #                                                running_loss, train_accuracy, valid_accuracy))
-        
-    #     if valid_accuracy > best_acc:
-    #         print('best model find at epoch', epoch)
-    #     best_acc = max(valid_accuracy, best_acc)
-    #     torch.save(model.state_dict(), os.path.join(model_save_path, 'epoch_{}.pth'.format(epoch)))
-
- 
