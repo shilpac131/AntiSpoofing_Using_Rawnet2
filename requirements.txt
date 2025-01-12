@@ -1,1 +1,6 @@
-../../LA/Baseline-RawNet2/requirements.txt
+#cuda==10.1
+numba==0.48
+numpy==1.17.0
+librosa==0.7.2
+pyyaml==5.3.1
+tensorboardX==2.1
