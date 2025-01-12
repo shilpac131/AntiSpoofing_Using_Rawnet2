@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import yaml
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval
 from model import RawNet
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 from core_scripts.startup_config import set_random_seed
 
 
@@ -67,40 +67,6 @@ def produce_evaluation_file(dataset, model, device, save_path):
     print('Scores saved to {}'.format(save_path))
 
 
-def train_epoch(train_loader, model, lr,optim, device):
-    running_loss = 0
-    num_correct = 0.0
-    num_total = 0.0
-    ii = 0
-    model.train()
-
-    #set objective (loss) functions
-    weight = torch.FloatTensor([0.1, 0.9]).to(device)
-    criterion = nn.CrossEntropyLoss(weight=weight)
-    
-    for batch_x, batch_y in train_loader:
-       
-        batch_size = batch_x.size(0)
-        num_total += batch_size
-        ii += 1
-        batch_x = batch_x.to(device)
-        batch_y = batch_y.view(-1).type(torch.int64).to(device)
-        batch_out = model(batch_x)
-        batch_loss = criterion(batch_out, batch_y)
-        _, batch_pred = batch_out.max(dim=1)
-        num_correct += (batch_pred == batch_y).sum(dim=0).item()
-        running_loss += (batch_loss.item() * batch_size)
-        if ii % 10 == 0:
-            sys.stdout.write('\r \t {:.2f}'.format(
-                (num_correct/num_total)*100))
-        optim.zero_grad()
-        batch_loss.backward()
-        optim.step()
-       
-    running_loss /= num_total
-    train_accuracy = (num_correct/num_total)*100
-    return running_loss, train_accuracy
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ASVspoof2021 baseline system')
     # Dataset
@@ -133,7 +99,7 @@ if __name__ == '__main__':
                         help='random seed (default: 1234)')
     
     parser.add_argument('--model_path', type=str,
-                        default='/home/shilpa/shilpa/ASVspoof2021Baselines/DF/Baseline-RawNet2/pre_trained_DF_RawNet2.pth', help='Model checkpoint. Here provide LA trained model path to evaluate on DF Eval databse')
+                        default='./pre_trained_DF_RawNet2.pth', help='Model checkpoint. Here provide LA trained model path to evaluate on DF Eval databse')
     parser.add_argument('--comment', type=str, default=None,
                         help='Comment to describe the saved model')
     # Auxiliary arguments
@@ -212,83 +178,29 @@ if __name__ == '__main__':
         audio_path = args.audio_path
         print('Audio loaded : {}'.format(audio_path))
 
+    output_file = './output.txt'
+    with open(output_file, "a") as file:
+        X,fs = librosa.load(audio_path, sr=16000) 
+        X_pad= pad(X,64600)
+        x_inp= Tensor(X_pad)
+        x_inp = x_inp.view(1, -1)
+        print("audio file loaded")
+        # Perform a forward pass on a single audio file
 
-    # path = '/home/shilpa/Documents/datasets/datasets/generated_audio/ljspeech_hifiGAN/LJ001-0001_generated.wav'
-    # audio_path = '/home/shilpa/Documents/datasets/datasets/LJ_Speech/LJSpeech-1.1/wavs/LJ001-0008.wav'
-    # path = '/home/shilpa/Downloads/LJ001-0001_generated.flac'
-    X,fs = librosa.load(audio_path, sr=16000) 
-    X_pad= pad(X,64600)
-    x_inp= Tensor(X_pad)
-    x_inp = x_inp.view(1, -1)
-    print("audio file loaded")
-    # Perform a forward pass on a single audio file
-
-    
-    print("let's begin inference")
-    model.eval()
-    x_inp = x_inp.to(device)
-    pred = model(x_inp)
-    softmax_probs = torch.softmax(pred, dim=1)
-    _, predicted_class = torch.max(softmax_probs, 1)
-    # _, pred_final = pred.max(dim=1)
-    if predicted_class.item() == 0:
-        print("The audio is spoofed")
-    elif predicted_class.item() == 1:
-        print("The audio is bonafide")
-
-
-
-    # # evaluation 
-    # if args.eval:
-    #     file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/{}.cm.eval.trl.txt'.format(prefix,prefix_2021)),is_train=False,is_eval=True)
-    #     print('no. of eval trials',len(file_eval))
-    #     eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
-    #     produce_evaluation_file(eval_set, model, device, args.eval_output)
-    #     sys.exit(0)
-    
-    # # define train dataloader
-
-    # d_label_trn,file_train = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt'.format(prefix)),is_train=True,is_eval=False)
-    # print('no. of training trials',len(file_train))
-    
-    # #train_set=Dataset_ASVspoof2019_train(list_IDs = file_train,labels = d_label_trn,base_dir = os.path.join(args.database_path+'ASVspoof2019_{}_train/'.format(args.track)))
-    # # Note we bypass the reference to the track to train on LA instead of on DF (there is no provided training or dev data for DF)
-    # train_set=Dataset_ASVspoof2019_train(list_IDs = file_train,labels = d_label_trn,base_dir = os.path.join(args.database_path+'ASVspoof2019_LA_train/'))
-
-    # train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True,drop_last = True)
-    
-    # del train_set,d_label_trn
-    
-    # # define validation dataloader
-
-    # # Note we bypass the reference to the track to validate on LA instead of on DF (there is no provided training or dev data for DF)
-    # d_label_dev,file_dev = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'{}_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt'.format(prefix)),is_train=False,is_eval=False)
-    # print('no. of validation trials',len(file_dev))
-
-    # # Note we bypass the reference to the track to train on LA instead of on DF (there is no provided training or dev data for DF)
-    # dev_set = Dataset_ASVspoof2019_train(list_IDs = file_dev,
-	# 	labels = d_label_dev,
-	# 	base_dir = os.path.join(args.database_path+'ASVspoof2019_LA_dev/'))
-    # dev_loader = DataLoader(dev_set, batch_size=args.batch_size, shuffle=False)
-    # del dev_set,d_label_dev
-
-
-    # # Training and validation 
-    # num_epochs = args.num_epochs
-    # writer = SummaryWriter('logs/{}'.format(model_tag))
-    # best_acc = 99
-    # for epoch in range(num_epochs):
-    #     running_loss, train_accuracy = train_epoch(train_loader,model, args.lr,optimizer, device)
-    #     valid_accuracy = evaluate_accuracy(dev_loader, model, device)
-    #     writer.add_scalar('train_accuracy', train_accuracy, epoch)
-    #     writer.add_scalar('valid_accuracy', valid_accuracy, epoch)
-    #     writer.add_scalar('loss', running_loss, epoch)
-    #     print('\n{} - {} - {:.2f} - {:.2f}'.format(epoch,
-    #                                                running_loss, train_accuracy, valid_accuracy))
+        print("let's begin inference")
+        model.eval()
+        x_inp = x_inp.to(device)
+        pred = model(x_inp)
+        softmax_probs = torch.softmax(pred, dim=1)
+        _, predicted_class = torch.max(softmax_probs, 1)
+        # Get the softmax probability values of the predicted class
+        predicted_class_probs = softmax_probs.gather(1, predicted_class.unsqueeze(1)).squeeze(1)
+        # _, pred_final = pred.max(dim=1)
+        if predicted_class.item() == 0:
+            print("The audio is spoofed")
+            file.write(f"\nPrediction of File {audio_path} is:> bonafide with confidence score of {predicted_class_probs.item()}")
+        elif predicted_class.item() == 1:
+            print("The audio is bonafide")
+            file.write(f"\nPrediction of File {audio_path} is:> bonafide with confidence score of {predicted_class_probs.item()}")
+        print(f"Predictions saved in path-> {output_file}")
         
-    #     if valid_accuracy > best_acc:
-    #         print('best model find at epoch', epoch)
-    #     best_acc = max(valid_accuracy, best_acc)
-    #     torch.save(model.state_dict(), os.path.join(model_save_path, 'epoch_{}.pth'.format(epoch)))
-
- 

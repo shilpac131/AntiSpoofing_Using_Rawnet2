@@ -244,4 +244,4 @@ if __name__ == '__main__':
 
     print("Total spoof:> ",count_spoof)
     print("Total bonafide:> ",count_bonafide)
-
+    print(f"Predictions saved in path-> {output_file}")

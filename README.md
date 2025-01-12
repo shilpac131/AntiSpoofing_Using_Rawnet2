@@ -24,10 +24,16 @@ $ pip install -r requirements.txt
 
 The model for the deepfake (DF) track is trained on the logical access (LA) train  partition of the ASVspoof 2019 dataset, which can can be downloaded from [here](https://datashare.is.ed.ac.uk/handle/10283/3336).
 
-###  On Custom spoofed data 
+###  On Custom spoofed data folder path:
 To test the model run :
 ```
 python main.py --track=DF --loss=CCE --is_eval --eval --folder_path='/your_database_path/'
+```
+
+###  On single audio file:
+To test the model run :
+```
+python main_single_audfile.py --track=DF --loss=CCE --is_eval --eval --audio_path='/your_single_audio_file_path/'
 ```
 
 ### On ASV spoof 2019 LA Evaluation data
